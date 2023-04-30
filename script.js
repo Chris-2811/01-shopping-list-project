@@ -5,76 +5,66 @@ const itemList = document.getElementById('item-list');
 const clear = document.getElementById('clear');
 const btn = document.querySelector('.btn');
 
-let isEditMode = false;
+let isEditMode
 
+// Add Item
 
-// On submit add
-
-function onItemSubmitAdd (e) {
-    e.preventDefault()
-    const newItem = input.value;
-   
-
+function onSubmitAdd(e) {
+    const newItem = input.value
     if(newItem === '') {
-        alert('please enter something');
+        alert('please enter something')
         return
     }
 
     if(isEditMode) {
-
         const item = document.querySelector('.edit-mode');
-
         item.classList.remove('edit-mode');
         item.remove();
 
-        removeFromLocalStorage(item.textContent)
-
-        isEditMode = false;
+        isEditMode = false
     } else {
-        if(checkForDubplicates(newItem)) {
-            alert('That item already exists');
+        if(checkForDuplicates(newItem)) {
+            alert('this item already exists')
             return
         }
     }
 
+    addItemToDom(newItem)
 
-    addItemToDOM(newItem)
-
-    addToLocalStorage(newItem)
-    checkUI();
+    addItemToLocalStorage(newItem)
+    checkUI()
     input.value = ''
-
+    e.preventDefault()
 }
 
-// Check for duplicates
-
-function checkForDubplicates(item) {
-    const items = getFromLocalStorage();
+function checkForDuplicates(item) {
+    const items = localStorage.getItem('items');
     return items.includes(item)
 }
 
-// Add item to DOM
+// Add item to dom
 
-function addItemToDOM(item) {
-
+function addItemToDom(item) {
     const li = document.createElement('li');
     li.appendChild(document.createTextNode(item));
 
-    const button = createButton('remove-item btn-link text-red')
-    li.appendChild(button);
-    itemList.appendChild(li);
+    button = createButton('remove-item btn-link text-red');
+    li.appendChild(button)
+    itemList.appendChild(li)
+
+    checkUI()
 }
 
 // Create Button
 
 function createButton(classes) {
     const button = document.createElement('button');
-    button.classList = classes;
-
-    const icon = createIcon('fa-solid fa-xmark');
+    button.classList = classes
+    const icon = createIcon('fa-solid fa-xmark')
     button.appendChild(icon)
-
+    
     return button
+
 }
 
 // Create Icon
@@ -86,56 +76,41 @@ function createIcon(classes) {
     return icon
 }
 
-// On click item
+// Remove Item
 
-function onClickItem(e) {
-    if(e.target.parentElement.classList.contains('remove-item')) {
-        removeItem(e.target.parentElement.parentElement)
-    } else {
-        setToEditMode(e.target)
+function removeItem(item) {
+    
+        if(confirm('Are you sure?')) {
+            item.remove();
+        }
+        
+        removeFromLocalStorage(item.textContent)
+        checkUI()
     }
+    
+function onClickItem(e) {
+        
+        
+        if(e.target.classList.contains('fa-xmark')) {
+            removeItem(e.target.parentElement.parentElement)
+        } else {
+            setToEditMode(e.target)
+        }
+        
 }
-
-// Set item to edit mode
 
 function setToEditMode(item) {
     isEditMode = true;
 
-    const items = document.querySelectorAll('.edit-mode')
+    const items = document.querySelectorAll('li')
     items.forEach(item => {
         item.classList.remove('edit-mode')
     })
 
-    item.classList.add('edit-mode');
+    item.classList.add('edit-mode')
     btn.style.backgroundColor = 'lightgreen';
     btn.innerHTML = '<i class="fa-solid fa-pen"></i> Update Item'
-
-
-    input.value = item.textContent
-}
-
-// Remove Item
-
-function removeItem(item) {
-   if(confirm('Are you sure?')) {
-    item.remove()
-   }
-
-    removeFromLocalStorage(item)
-
-    checkUI()
-}
-
-// Clear Items
-
-function clearItems() {
-    while(itemList.firstChild) {
-        itemList.removeChild(itemList.firstChild)
-    }
-
-    clearFromLocalStorage()
-
-    checkUI()
+    input.value = item.textContent;
 }
 
 // Filter Items
@@ -143,54 +118,49 @@ function clearItems() {
 function filterItems(e) {
     const text = e.target.value.toLowerCase();
 
-    const items = document.querySelectorAll('li');
-
-
-    items.forEach(item => {
+    document.querySelectorAll('li').forEach(item => {
         const itemText = item.textContent.toLowerCase();
 
         if(itemText.indexOf(text) !== -1) {
-            item.style.display = 'flex';
+            item.style.display = 'flex'
         } else {
             item.style.display = 'none'
         }
     })
-
 }
 
-// checkUI 
+// Clear items
+
+function clearItems(e) {
+    while(itemList.firstChild) {
+        itemList.removeChild(itemList.firstChild)
+    }
+
+    clearFromLocalStorage()
+    checkUI()
+}   
+
+// checkUI
 
 function checkUI() {
-    input.value = ''
-
     const items = document.querySelectorAll('li');
 
-    if(items.length === 0) {
-        filter.style.display = 'none';
-        clear.style.display = 'none';
+    if(items.length <= 0) {
+        clear.style.display = 'none'
+        filter.style.display = 'none'
     } else {
-        filter.style.display = 'block';
-        clear.style.display = 'block';
+        clear.style.display = 'block'
+        filter.style.display = 'block'
     }
 
     btn.style.backgroundColor = '#333';
-    btn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Item'
-
+    btn.innerHTML = '<i class ="fa-solid fa-plus"></i> Add Item'
 }
 
-// Add to local storage
 
-function addToLocalStorage(item) {
-    let items = getFromLocalStorage();
+// Get Items from Storage 
 
-    items.push(item)
-
-    localStorage.setItem('items', JSON.stringify(items))
-}
-
-// Get from local storage
-
-function getFromLocalStorage() {
+function getItemsFromStorage() {
     let items;
 
     if(localStorage.getItem('items') === null) {
@@ -202,55 +172,45 @@ function getFromLocalStorage() {
     return items
 }
 
-// Remove from local storage
+function addItemToLocalStorage(item) {
+    let items = getItemsFromStorage();
 
-function removeFromLocalStorage(item) {
-    let items = getFromLocalStorage();
-
-    items = items.filter(i => {
-        i !== item
-    })
+    items.push(item);
 
     localStorage.setItem('items', JSON.stringify(items))
-
 }
 
-// Clear from local storage
+function removeFromLocalStorage(item) {
+    let items = getItemsFromStorage();
+
+    items = items.filter(i => i !== item)
+
+    localStorage.setItem('items', JSON.stringify(items))
+}
 
 function clearFromLocalStorage() {
-    let items = getFromLocalStorage();
+    let items = getItemsFromStorage();
 
     items = [];
 
     localStorage.setItem('items', JSON.stringify(items))
 }
 
-// Display from local storage
-
 function displayFromLocalStorage() {
-    let items = getFromLocalStorage();
+    const items = getItemsFromStorage();
 
     items.forEach(item => {
-        const li = document.createElement('li');
-    li.appendChild(document.createTextNode(item));
-
-    const button = createButton('remove-item btn-link text-red')
-    li.appendChild(button);
-    itemList.appendChild(li);
+        addItemToDom(item)
     })
-
 }
 
-
-function init() {
-    form.addEventListener('submit', onItemSubmitAdd);
+function addEventListeners() {
+    form.addEventListener('submit', onSubmitAdd);
     itemList.addEventListener('click', onClickItem);
     clear.addEventListener('click', clearItems);
     filter.addEventListener('input', filterItems);
     window.addEventListener('DOMContentLoaded', displayFromLocalStorage)
-
-    checkUI()
 }
 
-
-init();
+checkUI()
+addEventListeners()
