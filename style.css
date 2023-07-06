@@ -123,6 +123,10 @@ header h1 {
   font-weight: 700;
 }
 
+.items li:hover {
+  cursor: pointer;
+}
+
 @media (max-width: 500px) {
   .items li {
     width: 100%;

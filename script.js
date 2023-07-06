@@ -1,169 +1,132 @@
-const itemForm = document.getElementById('item-form');
-const itemInput = document.getElementById('item-input');
+const form = document.getElementById('item-form');
+const input = document.getElementById('item-input');
+const filter = document.getElementById('filter');
 const itemList = document.getElementById('item-list');
-const clearBtn = document.getElementById('clear');
-const itemFilter = document.getElementById('filter');
-const formBtn = itemForm.querySelector('button');
-let isEditMode = false;
+const clear = document.getElementById('clear');
 
-function displayItems() {
-  const itemsFromStorage = getItemsFromStorage();
-  itemsFromStorage.forEach((item) => addItemToDOM(item));
-  checkUI();
-}
+const btn = document.querySelector('.btn');
 
+let editMode = false;
+
+// Add item
 function onAddItemSubmit(e) {
   e.preventDefault();
+  newItem = input.value;
 
-  const newItem = itemInput.value;
-
-  // Validate Input
-  if (newItem === '') {
-    alert('Please add an item');
+  if (input.value === '') {
+    alert('Please enter an item');
     return;
   }
 
-  // Check for edit mode
-  if (isEditMode) {
-    const itemToEdit = itemList.querySelector('.edit-mode');
-
-    removeItemFromStorage(itemToEdit.textContent);
-    itemToEdit.classList.remove('edit-mode');
-    itemToEdit.remove();
-    isEditMode = false;
+  if (editMode) {
+    if (checkForDuplicates(newItem)) {
+      alert('That item already exists!');
+      return;
+    } else {
+      const itemToEdit = itemList.querySelector('.edit-mode');
+      itemToEdit.classList.remove('edit-mode');
+      itemToEdit.remove();
+      editMode = false;
+    }
   } else {
-    if (checkIfItemExists(newItem)) {
+    if (checkForDuplicates(newItem)) {
       alert('That item already exists!');
       return;
     }
   }
 
-  // Create item DOM element
-  addItemToDOM(newItem);
-
-  // Add item to local storage
   addItemToStorage(newItem);
-
-  checkUI();
-
-  itemInput.value = '';
+  addToDOM(newItem);
+  updateUI();
 }
 
-function addItemToDOM(item) {
-  // Create list item
-  const li = document.createElement('li');
-  li.appendChild(document.createTextNode(item));
+// Check for duplicates
+function checkForDuplicates(item) {
+  const items = getItemsFromStorage();
 
+  return items.includes(item);
+}
+
+// Add item to dom
+function addToDOM(newItem) {
+  const li = document.createElement('li');
+  li.appendChild(document.createTextNode(newItem));
   const button = createButton('remove-item btn-link text-red');
   li.appendChild(button);
-
-  // Add li to the DOM
   itemList.appendChild(li);
+
+  input.value = '';
 }
 
+// Create Button
 function createButton(classes) {
   const button = document.createElement('button');
   button.className = classes;
+
   const icon = createIcon('fa-solid fa-xmark');
   button.appendChild(icon);
+
   return button;
 }
 
+// Create Icon
 function createIcon(classes) {
-  const icon = document.createElement('i');
+  const icon = document.createElement('icon');
   icon.className = classes;
+
   return icon;
 }
 
-function addItemToStorage(item) {
-  const itemsFromStorage = getItemsFromStorage();
-
-  // Add new item to array
-  itemsFromStorage.push(item);
-
-  // Convert to JSON string and set to local storage
-  localStorage.setItem('items', JSON.stringify(itemsFromStorage));
-}
-
-function getItemsFromStorage() {
-  let itemsFromStorage;
-
-  if (localStorage.getItem('items') === null) {
-    itemsFromStorage = [];
-  } else {
-    itemsFromStorage = JSON.parse(localStorage.getItem('items'));
-  }
-
-  return itemsFromStorage;
-}
-
-function onClickItem(e) {
+// On item click
+function onItemClick(e) {
   if (e.target.parentElement.classList.contains('remove-item')) {
-    removeItem(e.target.parentElement.parentElement);
-  }else if (e.target.closest("li")) {
-    setItemToEdit(e.target);
+    if (confirm('Are you sure?'))
+      removeItem(e.target.parentElement.parentElement);
+  } else {
+    setToEditMode(e.target);
   }
 }
 
-function checkIfItemExists(item) {
-  const itemsFromStorage = getItemsFromStorage();
-  return itemsFromStorage.includes(item);
-}
-
-function setItemToEdit(item) {
-  isEditMode = true;
-
-  itemList
-    .querySelectorAll('li')
-    .forEach((i) => i.classList.remove('edit-mode'));
-
+// Set to edit mode
+function setToEditMode(item) {
+  const items = document.querySelectorAll('li');
+  items.forEach((item) => {
+    item.classList.remove('edit-mode');
+  });
   item.classList.add('edit-mode');
-  formBtn.innerHTML = '<i class="fa-solid fa-pen"></i>   Update Item';
-  formBtn.style.backgroundColor = '#228B22';
-  itemInput.value = item.textContent;
+  input.value = item.textContent;
+  btn.style.backgroundColor = 'green';
+  btn.innerHTML = '<i class="fa fa-pen"></i> Update Item';
+
+  editMode = true;
 }
 
+// Remove Item
 function removeItem(item) {
-  if (confirm('Are you sure?')) {
-    // Remove item from DOM
-    item.remove();
-
-    // Remove item from storage
-    removeItemFromStorage(item.textContent);
-
-    checkUI();
-  }
+  item.remove();
+  removeItemFromStorage(item.textContent);
+  updateUI();
 }
 
-function removeItemFromStorage(item) {
-  let itemsFromStorage = getItemsFromStorage();
-
-  // Filter out item to be removed
-  itemsFromStorage = itemsFromStorage.filter((i) => i !== item);
-
-  // Re-set to localstorage
-  localStorage.setItem('items', JSON.stringify(itemsFromStorage));
-}
-
-function clearItems() {
+// Clear Items
+function clearItems(e) {
   while (itemList.firstChild) {
     itemList.removeChild(itemList.firstChild);
   }
 
-  // Clear from localStorage
-  localStorage.removeItem('items');
-
-  checkUI();
+  clearStorage();
+  updateUI();
 }
 
+// Filter Items
 function filterItems(e) {
-  const items = itemList.querySelectorAll('li');
   const text = e.target.value.toLowerCase();
+  console.log(text);
 
-  items.forEach((item) => {
-    const itemName = item.firstChild.textContent.toLowerCase();
+  document.querySelectorAll('li').forEach((item) => {
+    const itemText = item.textContent.toLowerCase();
 
-    if (itemName.indexOf(text) != -1) {
+    if (itemText.indexOf(text) !== -1) {
       item.style.display = 'flex';
     } else {
       item.style.display = 'none';
@@ -171,35 +134,82 @@ function filterItems(e) {
   });
 }
 
-function checkUI() {
-  itemInput.value = '';
+// Update the UI
+function updateUI() {
+  const items = document.querySelectorAll('li');
 
-  const items = itemList.querySelectorAll('li');
-
-  if (items.length === 0) {
-    clearBtn.style.display = 'none';
-    itemFilter.style.display = 'none';
+  if (items.length < 1) {
+    clear.style.display = 'none';
+    filter.style.display = 'none';
   } else {
-    clearBtn.style.display = 'block';
-    itemFilter.style.display = 'block';
+    clear.style.display = 'block';
+    clear.style.display = 'block';
   }
 
-  formBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Item';
-  formBtn.style.backgroundColor = '#333';
-
-  isEditMode = false;
+  btn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Item';
+  btn.style.backgroundColor = '#000';
 }
 
-// Initialize app
-function init() {
-  // Event Listeners
-  itemForm.addEventListener('submit', onAddItemSubmit);
-  itemList.addEventListener('click', onClickItem);
-  clearBtn.addEventListener('click', clearItems);
-  itemFilter.addEventListener('input', filterItems);
-  document.addEventListener('DOMContentLoaded', displayItems);
+// Locale Storage
 
-  checkUI();
+// Get items from local Storage
+function getItemsFromStorage() {
+  let items;
+
+  if (localStorage.getItem('items') === null) {
+    items = [];
+  } else {
+    items = JSON.parse(localStorage.getItem('items'));
+  }
+
+  return items;
+}
+
+// Add item to local storage
+function addItemToStorage(item) {
+  let items = getItemsFromStorage();
+
+  items.push(item);
+
+  localStorage.setItem('items', JSON.stringify(items));
+}
+
+// Remove item from local storage
+function removeItemFromStorage(i) {
+  let items = getItemsFromStorage();
+
+  items.forEach((item, index) => {
+    if (item === i) {
+      items.splice(index, 1);
+    }
+  });
+
+  localStorage.setItem('items', JSON.stringify(items));
+}
+
+// Clear local storage
+function clearStorage() {
+  localStorage.clear();
+}
+
+// Display from local storage
+function displayFromLocalStorage() {
+  let items = getItemsFromStorage();
+
+  items.forEach((item) => {
+    addToDOM(item);
+  });
+}
+
+// Add Eventlistener
+function init() {
+  form.addEventListener('submit', onAddItemSubmit);
+  itemList.addEventListener('click', onItemClick);
+  clear.addEventListener('click', clearItems);
+  filter.addEventListener('input', filterItems);
+  window.addEventListener('DOMContentLoaded', displayFromLocalStorage);
+
+  updateUI();
 }
 
 init();
